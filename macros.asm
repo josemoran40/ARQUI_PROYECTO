@@ -238,10 +238,10 @@ videoModeOFF macro
  int 10h
 endm
 
-moverPelota macro direccion ;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
+moverPelota macro direccion, pelota ;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
 	LOCAL AD, BD, BI, AI, fin
 	pushear
-    mov dx, posPelota[0] 
+    mov dx, pelota[0] 
     printPelota dx,negro
 
 	xor ax, ax
@@ -257,27 +257,27 @@ moverPelota macro direccion ;0:arriba derecha 1: arriba izquierda;2:abajo derech
 	jmp fin
 	AD:
     sub dx, 318
-	cambiarAD dx
+	cambiarAD dx, direccion
 	jmp fin
 	AI:
     sub dx, 322
-    cambiarAI dx
+    cambiarAI dx, direccion
 	jmp fin
 	BD:
     add dx, 322
-	cambiarBD dx
+	cambiarBD dx, direccion
 	jmp fin
 	BI:
     add dx, 318
-    cambiarBI dx
+    cambiarBI dx, direccion
 
 	fin:
-	mov posPelota[0],dx
+	mov pelota[0],dx
 	popear
 endm
 
 
-cambiarAD macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
+cambiarAD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
 	LOCAL arriba, derecha, fin, pintar
 	pushear
 	mov di, pos
@@ -306,7 +306,7 @@ cambiarAD macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abaj
 endm
 
 
-cambiarAI macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
+cambiarAI macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
 	LOCAL arriba, izquierda, fin, pintar
 	pushear
 	mov di, pos
@@ -316,7 +316,7 @@ cambiarAI macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abaj
 
   	mov dl,[di+318]	
 	cmp dl, negro
-	jne izquierda
+	jne izquierda 
 	jmp pintar
 	arriba:
 	mov direccion[0],3;abajo izquierda
@@ -334,7 +334,7 @@ cambiarAI macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abaj
 	popear
 endm
 
-cambiarBD macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
+cambiarBD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
 	LOCAL abajo, derecha, fin, pintar
 	pushear
 	mov di, pos
@@ -362,7 +362,7 @@ cambiarBD macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abaj
 	popear
 endm
 
-cambiarBI macro pos;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
+cambiarBI macro pos,direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
 	LOCAL abajo, izquierda, fin, pintar
 	pushear
 	mov di, pos
@@ -496,6 +496,12 @@ destruirBloque macro
 
 
 	gris:
+	mov dh,contadorPelotas[0]
+	dec dh
+	mov contadorPelotas[0], dh
+	cmp dh,0
+	jne fin
+
 	printVideo 15,17, prueba
 	fin:
 
@@ -568,7 +574,8 @@ jugar macro
 	;printVideo 0,0,direccion
 	;mov direccion[0], 0
 	cicloActual: 
-	moverPelota direccion[0]
+	moverPelota direccion1[0], posPelota1
+	moverPelota direccion2[0], posPelota2
 	call Delay
 	call HasKey
 	jz cicloActual
@@ -592,47 +599,5 @@ jugar macro
 	jmp cicloActual   
 	fin:
 
-endm
-
-
-toString macro string
-	local Divide, Divide2, EndCr3, Negative, End2, EndGC
-	pushear
-        Push si
-        xor si, si
-        xor cx, cx
-        xor bx, bx
-        xor dx, dx
-        mov di, 0ah
-        test ax, 1000000000000000b
-            jnz Negative
-        jmp Divide2
-        Negative:
-            neg ax
-            mov string[si], 45
-            inc si
-            jmp Divide2
-        
-        Divide:
-            xor dx, dx
-        Divide2:
-            div di
-            inc cx
-            Push dx
-            cmp ax, 00h
-                je EndCr3
-            jmp Divide
-        EndCr3:
-            pop dx
-            add dx, 30h
-            mov string[si], dl
-            inc si
-        Loop EndCr3
-        mov dx, 24h
-        mov string[si], dl
-        inc si
-        EndGC:
-            Pop si
-		popear
 endm
 

@@ -6,18 +6,17 @@
 .data
  prueba db 'FIN','$'
  barra db 170
- posPelota dw 35420
- direccion db 0,'$'
- numeros db '$$$$$$','$'
+ posPelota1 dw 35420
+ posPelota2 dw 35354
+ direccion1 db 0,1
+ direccion2 db 1,1
+ contadorPelotas db 2
 
 ;------------------------ COLORES ------------------------------
  verdeLimon equ 2eh
  blanco equ 0fh
- naranja1 equ 2ah
  naranja2 equ 2bh
- celesteClaro equ 0bh
  azulOscuro equ 36h
- lila equ 3ah
  negro equ 00h
 
 ;verdes
@@ -51,8 +50,11 @@
     main proc
     videoModeON
     mov barra[0],100
-   ; mov direccion[0],0;35354 IDEAL NIVEL 1
-    mov posPelota[0],35354
+    mov direccion2[0],1;35354 IDEAL NIVEL 1
+    mov posPelota1[0],35354
+    mov posPelota2[0],35145
+    mov contadorPelotas[0],2
+
       MENU:
             
 	moverCursor 0,0
@@ -75,7 +77,7 @@
                 jmp MENU           
             OPCION2:
                 imprimirBloque1
-                imprimirBloque2
+                ;imprimirBloque2
                jugar      
                 jmp MENU
             
