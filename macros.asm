@@ -16,6 +16,20 @@ Popear macro
         pop ax
 endm
 
+
+print macro cadena 
+ LOCAL ETIQUETA 
+ pushear 
+ ETIQUETA: 
+	MOV ah,09h 
+	MOV dx,@data
+	MOV ds,dx 
+	MOV dx, offset cadena
+	int 21h 
+
+popear
+endm
+
 ;-----
 
 getChar macro
@@ -34,7 +48,7 @@ printVideo macro x, y, string 		;x0,y0,cadena
 	mov dl,y
 	int 10h
 
-    
+    push ds
 	MOV ah,09h 
 	MOV dx,@data
 	MOV ds,dx
@@ -42,6 +56,7 @@ printVideo macro x, y, string 		;x0,y0,cadena
 	mov dx,offset string
 	mov ah,9h
 	int 21h
+	pop ds
     popear
 endm
 
@@ -234,7 +249,12 @@ videoModeON macro
 endm
 
 videoModeOFF macro
- mov ax,3h
+ push dx
+ MOV dx,@data
+ MOV ds,dx
+ pop dx
+ mov ah,00h
+ mov al,3h
  int 10h
 endm
 
@@ -278,7 +298,7 @@ endm
 
 
 cambiarAD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
-	LOCAL arriba, derecha, fin, pintar
+	LOCAL arriba, derecha, fin, pintar, fin2
 	pushear
 	mov di, pos
   	mov dl,[di-639]
@@ -291,23 +311,24 @@ cambiarAD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	jmp pintar
 	arriba:
 	mov direccion[0],2;abajo derecha
-	destruirBloque
 	jmp fin
 
 	derecha:
 	mov direccion[0],1;arriba izquirda
-	destruirBloque
 	jmp fin
 
 	pintar:	
     printPelota di,naranja2
+	jmp fin2
 	fin:
+	destruirBloque direccion
+	fin2:
 	popear
 endm
 
 
 cambiarAI macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
-	LOCAL arriba, izquierda, fin, pintar
+	LOCAL arriba, izquierda, fin, pintar,fin2
 	pushear
 	mov di, pos
   	mov dl,[di-639]
@@ -320,22 +341,23 @@ cambiarAI macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	jmp pintar
 	arriba:
 	mov direccion[0],3;abajo izquierda
-	destruirBloque
 	jmp fin
 
 	izquierda:
 	mov direccion[0],0;arriba derecha
-	destruirBloque
 	jmp fin
 
 	pintar:	
     printPelota di,naranja2
+	jmp fin2
 	fin:
+	destruirBloque direccion
+	fin2:
 	popear
 endm
 
 cambiarBD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
-	LOCAL abajo, derecha, fin, pintar
+	LOCAL abajo, derecha, fin, pintar, fin2
 	pushear
 	mov di, pos
   	mov dl,[di+1281]
@@ -348,22 +370,23 @@ cambiarBD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	jmp pintar
 	abajo:
 	mov direccion[0],0;arriba derecha
-	destruirBloque
 	jmp fin
 
 	derecha:
 	mov direccion[0],3;abajo izquirda
-	destruirBloque
 	jmp fin
 
 	pintar:	
     printPelota di,naranja2
+	jmp fin2
 	fin:
+	destruirBloque direccion
+	fin2:
 	popear
 endm
 
 cambiarBI macro pos,direccion;0:arriba derecha 1: arriba izquierda;2:abajo derecha; 3:abajo izquierda
-	LOCAL abajo, izquierda, fin, pintar
+	LOCAL abajo, izquierda, fin, pintar, fin2
 	pushear
 	mov di, pos
   	mov dl,[di+1281]
@@ -375,23 +398,25 @@ cambiarBI macro pos,direccion;0:arriba derecha 1: arriba izquierda;2:abajo derec
 	jne izquierda
 	jmp pintar
 	abajo:
-	mov direccion[0],1;arriba izquierda
-	destruirBloque
+	mov direccion[0],1;arriba izquierda	
 	jmp fin
 
 	izquierda:
 	mov direccion[0],2;abajo derecha
-	destruirBloque
 	jmp fin
 
 	pintar:	
     printPelota di,naranja2
+	jmp fin2
 	fin:
+	destruirBloque direccion
+	fin2:
+
 	popear
 endm
 
-destruirBloque macro 
-	local mo1, mo2, mo3, mo4,fin,ve1,ve2,ve3, ve4, am1, am2, am3, am4,gris, az1,az2,az3,az4
+destruirBloque macro direccion
+	local mo1, mo2, mo3, mo4,fin,ve1,ve2,ve3, ve4, am1, am2, am3, am4,gris, az1,az2,az3,az4, fin2
 	cmp dl, morado1
 	je mo1
 	cmp dl, morado2
@@ -430,7 +455,7 @@ destruirBloque macro
 	cmp dl, 1dh
 	je gris
 
-	jmp fin
+	jmp fin2
 
 
 	mo1:
@@ -496,14 +521,41 @@ destruirBloque macro
 
 
 	gris:
+	mov direccion[1],1
 	mov dh,contadorPelotas[0]
 	dec dh
 	mov contadorPelotas[0], dh
 	cmp dh,0
-	jne fin
+	jne fin2
+
+	push dx
+	push ds
+	mov dx,@data
+	MOV ds,dx
 
 	printVideo 15,17, prueba
+
+	pop ds
+	pop dx
+	jmp fin2
 	fin:
+	;printVideo 0,0,prueba
+	push ax
+	push dx
+	push ds
+	xor ax,ax
+	mov dx,@data
+	MOV ds,dx
+	mov al, punteo[0]
+	add al,1
+	mov punteo[0], al
+	toString numeros
+	printVideo 0,20, numeros 
+	pop ds
+	pop dx
+	pop ax
+
+	fin2:
 
 endm
 
@@ -563,23 +615,35 @@ imprimirBloque2 macro
 endm
 
 jugar macro 
-	local cicloActual, fin, IZQ, DER, actual
+	local cicloActual, fin, IZQ, DER, actual, salto, salto2
 	
-
+    mov barra[0],100
+	mov direccion1[0],0;35354 IDEAL NIVEL 1
+    mov direccion2[0],1;35354 IDEAL NIVEL 1
+	mov direccion1[1],0;35354 IDEAL NIVEL 1
+    mov direccion2[1],0;35354 IDEAL NIVEL 1
+    mov posPelota1[0],35354
+    mov punteo[0],0
+    mov posPelota2[0],35145
+	printVideo 0,20, punteo 
 	
-	
-
 	printBarra 1   
-	;moverCursor 0,0
-	;printVideo 0,0,direccion
-	;mov direccion[0], 0
 	cicloActual: 
+	cmp direccion1[1],0
+	jne salto	
 	moverPelota direccion1[0], posPelota1
+	salto:
+	cmp direccion2[1],0
+	jne salto2
 	moverPelota direccion2[0], posPelota2
+	
+	salto2:
+	ganar
+
 	call Delay
 	call HasKey
 	jz cicloActual
-
+	
 	call GetCh        ; si hay, leer cual es
   
   	cmp al, '3'       
@@ -598,6 +662,69 @@ jugar macro
 	         ; sino comprobar movimientos
 	jmp cicloActual   
 	fin:
+	videoModeOFF
 
 endm
 
+toString macro string
+	local Divide, Divide2, EndCr3, Negative, End2, EndGC
+        Push si
+        xor si, si
+        xor cx, cx
+        xor bx, bx
+        xor dx, dx
+        mov di, 0ah
+        test ax, 1000000000000000b
+            jnz Negative
+        jmp Divide2
+        Negative:
+            neg ax
+            mov string[si], 45
+            inc si
+            jmp Divide2
+        
+        Divide:
+            xor dx, dx
+        Divide2:
+            div di
+            inc cx
+            Push dx
+            cmp ax, 00h
+                je EndCr3
+            jmp Divide
+        EndCr3:
+            pop dx
+            add dx, 30h
+            mov string[si], dl
+            inc si
+        Loop EndCr3
+        mov dx, 24h
+        mov string[si], dl
+        inc si
+        EndGC:
+            Pop si
+endm
+
+ganar macro
+	local gano, continuar
+	push ax
+	push dx
+	push ds
+	xor ax,ax
+	mov dx,@data
+	MOV ds,dx
+	mov al, punteo[0]
+	cmp al, 12
+	je gano
+	jmp continuar
+
+	gano:
+	printVideo 15,17, terminar
+	getChar
+	jmp WIN
+	continuar:
+
+	pop ds
+	pop dx
+	pop ax
+endm

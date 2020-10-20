@@ -11,6 +11,13 @@
  direccion1 db 0,1
  direccion2 db 1,1
  contadorPelotas db 2
+ punteo db 0, '$'
+ numeros db '$$$$$$','$'
+ banderaPelota db 0,'$'
+ terminar db 'WIN ',1,'$'
+ intro1 db 'UNIVERSIDAD DE SAN CARLOS',0ah,0dh,'FACULTAD DE INGENIERIA',0ah,0dh,'CIENCIAS Y SISTEMAS',0ah,0dh,'$'
+ intro2 db 'ARQUITECTURA DE COMPUTADORAS 1',0ah,0dh,'JOSE EDUARDO MORAN REYES',0ah,0dh,'201807455',0ah,0dh,'SECCION A',0ah,0dh,'$'
+ opciones db 0ah,0dh,'1) INGRESAR',0ah,0dh,'2) REGISTRAR',0ah,0dh,'3) SALIR',0ah,0dh,'$' 
 
 ;------------------------ COLORES ------------------------------
  verdeLimon equ 2eh
@@ -48,16 +55,22 @@
     
     include macros.asm
     main proc
-    videoModeON
+    push dx
+    mov dx,@data
+	MOV ds,dx
+    pop dx
+
     mov barra[0],100
     mov direccion2[0],1;35354 IDEAL NIVEL 1
     mov posPelota1[0],35354
+    mov punteo[0],0
     mov posPelota2[0],35145
     mov contadorPelotas[0],2
-
+    
+        print intro1
+        print intro2
       MENU:
-            
-	moverCursor 0,0
+        print opciones
             getChar
             ;call ClearScreen 
             cmp al,49
@@ -66,33 +79,26 @@
             je OPCION2
             cmp al,51
             je SALIR
-            cmp al,65
-            je IZQUIERDA
-            cmp al,68
-            je DERECHA
             jmp MENU 
 
             OPCION1:  
                 printVideo 10,10, prueba
                 jmp MENU           
             OPCION2:
+                videoModeON
                 imprimirBloque1
                 ;imprimirBloque2
                jugar      
                 jmp MENU
             
-            IZQUIERDA:
-               printBarra 1
-               jmp MENU
 
-            
-            DERECHA:
-               printBarra 0
-               jmp MENU
+            WIN:
+            videoModeOFF
+                jmp MENU
         SALIR: 
-           videoModeOFF
 			MOV ah,4ch
 			int 21h
+            
         ;proce
     
     include procs.asm
