@@ -33,3 +33,18 @@ GetCh:
     xor ah,ah        
     int 16h            
     ret  
+  
+ClearScreen proc
+  pushear
+	mov di, 0
+  mov cx, 160000
+  mov dl, 00h
+  ciclo:
+  
+    mov es:[di],dl
+    inc di
+    loop ciclo
+	
+	popear
+	ret
+ClearScreen endp

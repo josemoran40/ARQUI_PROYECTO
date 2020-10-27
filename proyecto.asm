@@ -18,7 +18,15 @@
  intro1 db 'UNIVERSIDAD DE SAN CARLOS',0ah,0dh,'FACULTAD DE INGENIERIA',0ah,0dh,'CIENCIAS Y SISTEMAS',0ah,0dh,'$'
  intro2 db 'ARQUITECTURA DE COMPUTADORAS 1',0ah,0dh,'JOSE EDUARDO MORAN REYES',0ah,0dh,'201807455',0ah,0dh,'SECCION A',0ah,0dh,'$'
  opciones db 0ah,0dh,'1) INGRESAR',0ah,0dh,'2) REGISTRAR',0ah,0dh,'3) SALIR',0ah,0dh,'$' 
+ pedirUsuario db 'Ingrese el nombre de usuario:',0ah,0dh,'$'
+ pedirContrasena db 'Ingrese la contrasena:',0ah,0dh,'$'
+ usuario db 10 dup('$')
+ contrasena db 10 dup('$')
+ newln db 0ah,0dh,'$'
 
+ meta db 12
+ nivel db 1
+ siguiente db 0
 ;------------------------ COLORES ------------------------------
  verdeLimon equ 2eh
  blanco equ 0fh
@@ -82,13 +90,11 @@
             jmp MENU 
 
             OPCION1:  
-                printVideo 10,10, prueba
-                jmp MENU           
-            OPCION2:
                 videoModeON
-                imprimirBloque1
-                ;imprimirBloque2
-               jugar      
+               jugar     
+                jmp MENU           
+            OPCION2: 
+                registro
                 jmp MENU
             
 

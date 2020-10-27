@@ -82,7 +82,7 @@ printPixel macro x,y, color
 	add ax,bx
 	mov di, ax
 	mov dl, color
-	mov [di],dl
+	mov es:[di],dl
 
 	;mov ah,0ch		
 	;mov al, color
@@ -220,9 +220,9 @@ aumentarBarra macro
     push bx
 	xor bx, bx
 	mov bl, barra[0]
-    cmp bl,190
+    cmp bl,186
     ja  salto
-	add bl,2
+	add bl,6
 	mov barra[0], bl
     salto:	
 	pop bx
@@ -233,9 +233,9 @@ disminuirBarra macro
     push bx
 	xor bx, bx
 	mov bl, barra[0]
-    cmp bl,9
+    cmp bl,13
     jb salto
-	sub bl,2
+	sub bl,6
 	mov barra[0], bl	
     salto:
 	pop bx
@@ -245,7 +245,7 @@ videoModeON macro
   	mov ax,13h
  	int 10h
 	mov ax, 0A000h
-  	mov ds, ax  ;
+  	mov es, ax  ;
 endm
 
 videoModeOFF macro
@@ -301,11 +301,11 @@ cambiarAD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	LOCAL arriba, derecha, fin, pintar, fin2
 	pushear
 	mov di, pos
-  	mov dl,[di-639]
+  	mov dl,es:[di-639]
 	cmp dl, negro
 	jne arriba
 
-  	mov dl,[di+324]	
+  	mov dl,es:[di+324]	
 	cmp dl, negro
 	jne derecha
 	jmp pintar
@@ -331,11 +331,11 @@ cambiarAI macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	LOCAL arriba, izquierda, fin, pintar,fin2
 	pushear
 	mov di, pos
-  	mov dl,[di-639]
+  	mov dl,es:[di-639]
 	cmp dl, negro
 	jne arriba
 
-  	mov dl,[di+318]	
+  	mov dl,es:[di+318]	
 	cmp dl, negro
 	jne izquierda 
 	jmp pintar
@@ -360,11 +360,11 @@ cambiarBD macro pos, direccion;0:arriba derecha 1: arriba izquierda;2:abajo dere
 	LOCAL abajo, derecha, fin, pintar, fin2
 	pushear
 	mov di, pos
-  	mov dl,[di+1281]
+  	mov dl,es:[di+1281]
 	cmp dl, negro
 	jne abajo
 
-  	mov dl,[di+324]	
+  	mov dl,es:[di+324]	
 	cmp dl, negro
 	jne derecha
 	jmp pintar
@@ -389,11 +389,11 @@ cambiarBI macro pos,direccion;0:arriba derecha 1: arriba izquierda;2:abajo derec
 	LOCAL abajo, izquierda, fin, pintar, fin2
 	pushear
 	mov di, pos
-  	mov dl,[di+1281]
+  	mov dl,es:[di+1281]
 	cmp dl, negro
 	jne abajo
 
-  	mov dl,[di+318]	
+  	mov dl,es:[di+318]	
 	cmp dl, negro
 	jne izquierda
 	jmp pintar
@@ -417,6 +417,7 @@ endm
 
 destruirBloque macro direccion
 	local mo1, mo2, mo3, mo4,fin,ve1,ve2,ve3, ve4, am1, am2, am3, am4,gris, az1,az2,az3,az4, fin2
+	pushear 
 	cmp dl, morado1
 	je mo1
 	cmp dl, morado2
@@ -459,63 +460,81 @@ destruirBloque macro direccion
 
 
 	mo1:
-	printBloque 13, 50, 70,10, negro
+	mov ax,13
+	mov bx,50
 	jmp fin
 	mo2:
-	printBloque 88, 50, 70,10, negro
+	
+	mov ax,88
+	mov bx,50
 	jmp fin
 	mo3:
-	printBloque 163, 50, 70,10, negro
+	
+	mov ax,163
+	mov bx,50
 	jmp fin
 	mo4:
-	printBloque 238, 50, 70,10, negro
+	mov ax,238
+	mov bx,50
 	jmp fin
 
 	ve1:
-	printBloque 13, 35, 70,10, negro
+	mov ax,13
+	mov bx,35
 	jmp fin
 
 	ve2:
-	printBloque 88, 35, 70,10, negro
+	mov ax,88
+	mov bx,35
 	jmp fin
 
 	ve3:
-	printBloque 163, 35, 70,10, negro
+	mov ax,163
+	mov bx,35
 	jmp fin
 
 	ve4:
-	printBloque 238, 35, 70,10, negro
+	mov ax,238
+	mov bx,35
 	jmp fin
 
 	am1:
-	printBloque 13, 20, 70,10, negro
+	mov ax,13
+	mov bx,20
 	jmp fin
 	am2:
-	printBloque 88, 20, 70,10, negro
+	mov ax,88
+	mov bx,20
 	jmp fin
 
 	am3:
-	printBloque 163, 20, 70,10, negro
+	mov ax,163
+	mov bx,20
 	jmp fin
 
 	am4:
-	printBloque 238, 20, 70,10, negro	
+	mov ax,238
+	mov bx,20
 	jmp fin
 
 	az1:
-	printBloque 13, 65, 70,10, negro
+	mov ax,13
+	mov bx,65
 	jmp fin
 
 	az2:
-	printBloque 88, 65, 70,10, negro
+	mov ax,88
+	mov bx,65
 	jmp fin
 
 	az3:
-	printBloque 163, 65, 70,10, negro
+	mov ax,163
+	mov bx,65
 	jmp fin
 
 	az4:
-	printBloque 238, 65, 70,10, negro
+	mov ax,238
+	mov bx,65
 	jmp fin
 
 
@@ -539,7 +558,8 @@ destruirBloque macro direccion
 	pop dx
 	jmp fin2
 	fin:
-	;printVideo 0,0,prueba
+	
+	printBloque ax, bx, 70,10, negro
 	push ax
 	push dx
 	push ds
@@ -556,7 +576,7 @@ destruirBloque macro direccion
 	pop ax
 
 	fin2:
-
+	popear
 endm
 
 
@@ -565,16 +585,16 @@ printPelota macro pos, color
   
 	pushear
 	mov di, pos
-	mov dl, color
-	mov [di],dl
-  	mov [di+1],dl
-  	mov [di+2],dl
-	mov [di+320],dl
-  	mov [di+321],dl
-  	mov [di+322],dl
-	mov [di+640],dl
-  	mov [di+641],dl
-  	mov [di+642],dl
+	mov dl, color	
+	mov es:[di],dl  
+  	mov es:[di+1],dl
+  	mov es:[di+2],dl
+	mov es:[di+320],dl
+  	mov es:[di+321],dl
+  	mov es:[di+322],dl
+	mov es:[di+640],dl
+  	mov es:[di+641],dl
+  	mov es:[di+642],dl
 
   popear
 endm
@@ -614,21 +634,95 @@ imprimirBloque2 macro
 	printBloque 238, 65, 70,10, azul4
 endm
 
-jugar macro 
+jugar macro
+	call ClearScreen
+	;nivel1
+	videoModeOFF
+	videoModeON
+	nivel2
+	videoModeOFF
+
+endm
+
+nivel1 macro 
 	local cicloActual, fin, IZQ, DER, actual, salto, salto2
 	
+    imprimirBloque1
+	
     mov barra[0],100
+	mov punteo[0],0
 	mov direccion1[0],0;35354 IDEAL NIVEL 1
     mov direccion2[0],1;35354 IDEAL NIVEL 1
 	mov direccion1[1],0;35354 IDEAL NIVEL 1
     mov direccion2[1],0;35354 IDEAL NIVEL 1
     mov posPelota1[0],35354
     mov punteo[0],0
-    mov posPelota2[0],35145
+    mov posPelota2[0],35445
+	printVideo 0,20, punteo 
+	mov siguiente, 0
+	
+	printBarra 1   
+	cicloActual: 
+	cmp siguiente, 1
+	je fin
+	cmp direccion1[1],0
+	jne salto	
+	moverPelota direccion1[0], posPelota1
+	salto:
+	cmp direccion2[1],0
+	jne salto2
+	;moverPelota direccion2[0], posPelota2
+	
+	salto2:
+	ganar
+
+	call Delay
+	call HasKey
+	jz cicloActual
+	
+	call GetCh        ; si hay, leer cual es
+  
+  	cmp al, '3'       
+ 	je fin  
+	cmp al, 'A'       
+ 	je IZQ
+	cmp al, 'D'       
+ 	je DER
+		jmp cicloActual
+	IZQ:
+	printBarra 1   	
+	jmp cicloActual 
+	DER:   
+	printBarra 0     
+	 
+	         ; sino comprobar movimientos
+	jmp cicloActual   
+	fin:
+endm
+
+
+nivel2 macro 
+	local cicloActual, fin, IZQ, DER, actual, salto, salto2
+	mov nivel,2
+	mov siguiente, 0
+	mov meta,16
+    imprimirBloque1
+	imprimirBloque2
+    mov barra[0],100
+	mov punteo[0],0
+	mov direccion1[0],0;35354 IDEAL NIVEL 1
+    mov direccion2[0],1;35354 IDEAL NIVEL 1
+	mov direccion1[1],0;35354 IDEAL NIVEL 1
+    mov direccion2[1],1;35354 IDEAL NIVEL 1
+    mov posPelota1[0],35354
+    mov punteo[0],0
+    mov posPelota2[0],35445
 	printVideo 0,20, punteo 
 	
 	printBarra 1   
 	cicloActual: 
+	cmp siguiente, 1
+	je fin
 	cmp direccion1[1],0
 	jne salto	
 	moverPelota direccion1[0], posPelota1
@@ -662,9 +756,8 @@ jugar macro
 	         ; sino comprobar movimientos
 	jmp cicloActual   
 	fin:
-	videoModeOFF
-
 endm
+
 
 toString macro string
 	local Divide, Divide2, EndCr3, Negative, End2, EndGC
@@ -706,7 +799,7 @@ toString macro string
 endm
 
 ganar macro
-	local gano, continuar
+	local gano, continuar,n1,n2,n3,continuar2
 	push ax
 	push dx
 	push ds
@@ -714,17 +807,89 @@ ganar macro
 	mov dx,@data
 	MOV ds,dx
 	mov al, punteo[0]
-	cmp al, 12
+	cmp al, meta
 	je gano
 	jmp continuar
 
 	gano:
 	printVideo 15,17, terminar
 	getChar
-	jmp WIN
+	mov siguiente, 1
+	jmp continuar2
 	continuar:
+	cmp nivel,1
+	je n1
+	cmp nivel,2
+	je n2
+	jmp n3
+	n1:
+		jmp continuar2
+	n2:
+		cmp al, 8
+		jne continuar2
+		cmp direccion2[1],1
+		jne continuar2
+		mov direccion2[1],0
+	n3:
 
+	continuar2:
 	pop ds
 	pop dx
 	pop ax
+endm
+
+registro macro
+ print pedirUsuario
+ getTexto2 usuario, 8
+ print usuario+2
+ print newln
+ print pedirContrasena
+ getTexto2 contrasena, 5
+ print contrasena+2
+ print newln
+endm
+
+getTexto2 macro buffer, sz
+    push ax
+    push dx
+    push bx
+    xor bx,bx
+    mov buffer[0],sz
+    mov buffer[1],0
+    Mov AH, 0Ah
+    Mov DX, Offset buffer
+    INT 21H
+    mov bl, buffer[1]
+    mov buffer[bx+2],'$'
+
+    pop bx
+    pop dx
+    pop ax
+    print newln
+endm
+
+crearArchivo macro buffer,handle
+    mov ah,3ch
+    mov cx,00h
+    lea dx,buffer
+    int 21h
+    jc ErrorCrear
+    mov handle,ax
+endm
+
+
+escribirArchivo macro numbytes,buffer,handle
+    pushear
+    escribir numbytes,buffer,handle
+    popear
+endm
+
+
+escribir macro numbytes,buffer,handle
+	mov ah, 40h
+	mov bx,handle
+	mov cx,numbytes
+	lea dx,buffer
+	int 21h
+	jc ErrorEscribir
 endm
