@@ -42,21 +42,17 @@ printVideo macro x, y, string 		;x0,y0,cadena
     pushear
 	xor ax,ax
     xor dx,dx
-
+	xor bx, bx
+	xor cx, cx
 	mov ah,02h
 	mov dh,x
 	mov dl,y
 	int 10h
 
-    push ds
-	MOV ah,09h 
-	MOV dx,@data
-	MOV ds,dx
 
 	mov dx,offset string
 	mov ah,9h
 	int 21h
-	pop ds
     popear
 endm
 
@@ -65,33 +61,28 @@ moverCursor macro x,y
 pushear
 	xor ax,ax
     xor dx,dx
-
+	xor bx, bx
 	mov ah,02h
 	mov dh,x
 	mov dl,y
 	int 10h
 popear
 endm
-printPixel macro x,y, color
-	pushear
-	mov ax,y
-	mov bx,320
-	mul bx
-	xor bx, bx
-	mov bx, x
-	add ax,bx
-	mov di, ax
-	mov dl, color
-	mov es:[di],dl
+	printPixel macro x,y, color
+		pushear
+		mov ax,y;y*320 + 
+		mov bx,320
+		mul bx
+		xor bx, bx
+		mov bx, x
+		add ax,bx
+		mov di, ax
+		mov dl, color
+		mov es:[di],dl
 
-	;mov ah,0ch		
-	;mov al, color
-	;mov bh,0h
-	;mov dx,y		
-	;mov cx,x		
-	;int 10h
-	popear
-endm
+		
+		popear
+	endm
 
 printBloque macro x, y, tamX, tamY, color		;x0,y0,tamX,tamY,color
 	LOCAL ejex, ejey, fin
@@ -416,7 +407,7 @@ cambiarBI macro pos,direccion;0:arriba derecha 1: arriba izquierda;2:abajo derec
 endm
 
 destruirBloque macro direccion
-	local mo1, mo2, mo3, mo4,fin,ve1,ve2,ve3, ve4, am1, am2, am3, am4,gris, az1,az2,az3,az4, fin2
+	local mo1, mo2, mo3, mo4,fin,ve1,ve2,ve3, ve4, am1, am2, am3, am4,gris, az1,az2,az3,az4, fin2, ro1,ro2,ro3,ro4
 	pushear 
 	cmp dl, morado1
 	je mo1
@@ -453,6 +444,17 @@ destruirBloque macro direccion
 	je az3
 	cmp dl, azul4
 	je az4
+
+	cmp dl, rosa1
+	je ro1
+	cmp dl, rosa2
+	je ro2
+	cmp dl, rosa3
+	je ro3
+	cmp dl, rosa4
+	je ro4
+
+
 	cmp dl, 1dh
 	je gris
 
@@ -537,6 +539,26 @@ destruirBloque macro direccion
 	mov bx,65
 	jmp fin
 
+	ro1:
+	mov ax,13
+	mov bx,80
+	jmp fin
+
+	ro2:
+	mov ax,88
+	mov bx,80
+	jmp fin
+
+	ro3:
+	mov ax,163
+	mov bx,80
+	jmp fin
+
+	ro4:
+	mov ax,238
+	mov bx,80
+	jmp fin
+
 
 
 	gris:
@@ -547,13 +569,14 @@ destruirBloque macro direccion
 	cmp dh,0
 	jne fin2
 
+
 	push dx
 	push ds
 	mov dx,@data
 	MOV ds,dx
 
 	printVideo 15,17, prueba
-
+	mov terminarJuego, 1
 	pop ds
 	pop dx
 	jmp fin2
@@ -634,19 +657,39 @@ imprimirBloque2 macro
 	printBloque 238, 65, 70,10, azul4
 endm
 
+imprimirBloque3 macro
+	printBloque 13, 80, 70,10, rosa1
+	printBloque 88, 80, 70,10, rosa2
+	printBloque 163, 80, 70,10, rosa3
+	printBloque 238, 80, 70,10, rosa4
+endm
+
+
 jugar macro
-	call ClearScreen
+	call tiempo_inicial
+	videoModeON
+	moverCursor 15,15
+	printVideo 12,6,pressEnter
+	getChar
+	videoModeOFF
+	videoModeON
 	;nivel1
 	videoModeOFF
 	videoModeON
-	nivel2
+	;nivel2
+	videoModeOFF
+	videoModeON
+	nivel3
 	videoModeOFF
 
 endm
 
 nivel1 macro 
-	local cicloActual, fin, IZQ, DER, actual, salto, salto2
+	local cicloActual, fin, IZQ, DER, actual, salto, salto2, pausar
 	
+	mov impnivel[1],'1'
+	printVideo 0,25, impnivel
+	printVideo 0,7, usuario+2
     imprimirBloque1
 	
     mov barra[0],100
@@ -658,6 +701,10 @@ nivel1 macro
     mov posPelota1[0],35354
     mov punteo[0],0
     mov posPelota2[0],35445
+    mov posPelota3[0],32219
+	mov contadorPelotas[0],1
+	mov terminarJuego, 0
+	mov siguiente, 0
 	printVideo 0,20, punteo 
 	mov siguiente, 0
 	
@@ -665,6 +712,8 @@ nivel1 macro
 	cicloActual: 
 	cmp siguiente, 1
 	je fin
+	cmp terminarJuego, 1
+	je LOSS
 	cmp direccion1[1],0
 	jne salto	
 	moverPelota direccion1[0], posPelota1
@@ -676,24 +725,31 @@ nivel1 macro
 	salto2:
 	ganar
 
-	call Delay
+	 Delay 05fffh
+	call cronometro
 	call HasKey
 	jz cicloActual
 	
 	call GetCh        ; si hay, leer cual es
   
   	cmp al, '3'       
- 	je fin  
+ 	je LOSS  
 	cmp al, 'A'       
  	je IZQ
 	cmp al, 'D'       
  	je DER
+	cmp al, 27       
+ 	je pausar
 		jmp cicloActual
 	IZQ:
 	printBarra 1   	
 	jmp cicloActual 
 	DER:   
-	printBarra 0     
+	printBarra 0   
+	jmp cicloActual
+
+	pausar:
+	pause  
 	 
 	         ; sino comprobar movimientos
 	jmp cicloActual   
@@ -702,27 +758,31 @@ endm
 
 
 nivel2 macro 
-	local cicloActual, fin, IZQ, DER, actual, salto, salto2
+	local cicloActual, fin, IZQ, DER, actual, salto, salto2, pausar
 	mov nivel,2
 	mov siguiente, 0
-	mov meta,16
+	mov meta,28
+	mov impnivel[1],'2'
+	printVideo 0,25, impnivel
+	printVideo 0,7, usuario+2
     imprimirBloque1
 	imprimirBloque2
     mov barra[0],100
-	mov punteo[0],0
-	mov direccion1[0],0;35354 IDEAL NIVEL 1
-    mov direccion2[0],1;35354 IDEAL NIVEL 1
+	mov direccion1[0],1;35354 IDEAL NIVEL 1
+    mov direccion2[0],0;35354 IDEAL NIVEL 1
 	mov direccion1[1],0;35354 IDEAL NIVEL 1
     mov direccion2[1],1;35354 IDEAL NIVEL 1
-    mov posPelota1[0],35354
-    mov punteo[0],0
-    mov posPelota2[0],35445
+    mov posPelota1[0],33150
+    mov posPelota2[0],32219
+	mov contadorPelotas[0],1
 	printVideo 0,20, punteo 
 	
 	printBarra 1   
 	cicloActual: 
 	cmp siguiente, 1
 	je fin
+	cmp terminarJuego, 1
+	je LOSS
 	cmp direccion1[1],0
 	jne salto	
 	moverPelota direccion1[0], posPelota1
@@ -734,29 +794,119 @@ nivel2 macro
 	salto2:
 	ganar
 
-	call Delay
+	 Delay 04fffh
+	call cronometro
 	call HasKey
 	jz cicloActual
 	
 	call GetCh        ; si hay, leer cual es
   
   	cmp al, '3'       
- 	je fin  
+ 	je LOSS  
 	cmp al, 'A'       
  	je IZQ
 	cmp al, 'D'       
  	je DER
+	cmp al, 27       
+ 	je pausar
 		jmp cicloActual
 	IZQ:
 	printBarra 1   	
 	jmp cicloActual 
 	DER:   
-	printBarra 0     
+	printBarra 0   
+	jmp cicloActual
+
+	pausar:
+	pause
 	 
 	         ; sino comprobar movimientos
 	jmp cicloActual   
 	fin:
 endm
+
+
+
+
+nivel3 macro 
+	local cicloActual, fin, IZQ, DER, actual, salto, salto2,salto3, pausar
+	mov nivel,3
+	mov siguiente, 0
+	mov meta,48
+	mov punteo[0],28
+    imprimirBloque1
+	imprimirBloque2
+	imprimirBloque3
+	mov impnivel[1],'3'
+	printVideo 0,25, impnivel
+	printVideo 0,7, usuario+2
+    mov barra[0],100
+	mov direccion1[0],1;35354 IDEAL NIVEL 1
+    mov direccion2[0],0;35354 IDEAL NIVEL 1
+    mov direccion3[0],0;35354 IDEAL NIVEL 1
+	mov direccion1[1],0;35354 IDEAL NIVEL 1
+    mov direccion2[1],1;35354 IDEAL NIVEL 1
+    mov direccion3[1],1;35354 IDEAL NIVEL 1
+    mov posPelota1[0],33150
+    mov posPelota2[0],32219
+    mov posPelota3[0],32219
+	mov contadorPelotas[0],1
+	printVideo 0,20, punteo 
+	
+	printBarra 1   
+	cicloActual: 
+	cmp siguiente, 1
+	je fin
+	cmp terminarJuego, 1
+	je LOSS
+	cmp direccion1[1],0
+	jne salto	
+	moverPelota direccion1[0], posPelota1
+	salto:
+	cmp direccion2[1],0
+	jne salto2
+	moverPelota direccion2[0], posPelota2
+	
+	salto2:
+	cmp direccion3[1],0
+	jne salto3
+	moverPelota direccion3[0], posPelota3
+
+	salto3:
+	ganar
+
+	Delay 03fffh
+	call cronometro
+	call HasKey
+	jz cicloActual
+	
+	call GetCh        ; si hay, leer cual es
+  
+  	cmp al, '3'       
+ 	je LOSS  
+	cmp al, 'A'       
+ 	je IZQ
+	cmp al, 'D'       
+ 	je DER
+	cmp al, 27       
+ 	je pausar
+		jmp cicloActual
+	IZQ:
+	printBarra 1   	
+	jmp cicloActual 
+	DER:   
+	printBarra 0   
+	jmp cicloActual
+
+	pausar:
+	pause
+	 
+	         ; sino comprobar movimientos
+	jmp cicloActual   
+	fin:
+endm
+
+
 
 
 toString macro string
@@ -799,7 +949,7 @@ toString macro string
 endm
 
 ganar macro
-	local gano, continuar,n1,n2,n3,continuar2
+	local gano, continuar,n1,n2,n3,continuar2,pel3
 	push ax
 	push dx
 	push ds
@@ -825,13 +975,39 @@ ganar macro
 	n1:
 		jmp continuar2
 	n2:
-		cmp al, 8
+		cmp al, 20
 		jne continuar2
 		cmp direccion2[1],1
 		jne continuar2
 		mov direccion2[1],0
+		push dx
+		mov dh,contadorPelotas[0]
+		add dh,1
+		mov contadorPelotas[0], dh
+		pop dx
 	n3:
+		cmp al, 34
+		jne pel3
+		cmp direccion2[1],1
+		jne pel3
+		mov direccion2[1],0
+		push dx
+		mov dh,contadorPelotas[0]
+		add dh,1
+		mov contadorPelotas[0], dh
+		pop dx
+		pel3:
+		cmp al, 41
+		jne continuar2
+		cmp direccion3[1],1
+		jne continuar2
+		mov direccion3[1],0
 
+		push dx
+		mov dh,contadorPelotas[0]
+		add dh,1
+		mov contadorPelotas[0], dh
+		pop dx
 	continuar2:
 	pop ds
 	pop dx
@@ -839,16 +1015,228 @@ ganar macro
 endm
 
 registro macro
- print pedirUsuario
- getTexto2 usuario, 8
- print usuario+2
- print newln
- print pedirContrasena
- getTexto2 contrasena, 5
- print contrasena+2
- print newln
+	LOCAL fin, falso, noEsNumero
+	limpiarCadena usuario, 10
+	limpiarCadena contrasena, 10
+	abrirArchivo rutaArchivo,handleFichero
+	leerArchivo 1000, bufferUsuarios,handleFichero
+	closefile handleFichero
+	print pedirUsuario
+	getTexto2 usuario, 8
+	print newln
+	print pedirContrasena
+	getTexto2 contrasena, 5
+	print newln
+	verificarNumeros contrasena+2, 4
+	cmp siEsNumero[0],'0'
+	je noEsNumero
+	comprobacion usuario+2, contrasena+2
+	cmp retornoExiste[0],'1'
+	je falso
+	escribirUsuario usuario+2, contrasena+2
+	print usuarioCreado
+	jmp fin
+	falso:
+	print errorUsuario
+	jmp fin
+
+	noEsNumero:   
+	print constrasenaFormato
+	fin:
 endm
 
+ingresar macro
+	LOCAL fin, falso, noEsNumero, siguiente
+	limpiarCadena usuario, 10
+	limpiarCadena contrasena, 10
+	abrirArchivo rutaArchivo,handleFichero
+	leerArchivo 1000, bufferUsuarios,handleFichero
+	closefile handleFichero
+	print pedirUsuario
+	getTexto2 usuario, 8
+	print newln
+	print pedirContrasena
+	getTexto2 contrasena, 5
+	print newln
+	verificarNumeros contrasena+2, 4
+	cmp siEsNumero[0],'0'
+	je noEsNumero
+
+	
+	compararCadenas adminUser, usuario+2, igual1
+	cmp igual1[0], '0'
+	je siguiente
+	;print jala
+	compararCadenas adminPass, contrasena+2, igual1
+	cmp igual1[0], '0'
+	je siguiente
+	print adminBienvenido
+	getChar
+	jmp fin
+	siguiente:
+	comprobacion usuario+2, contrasena+2
+	cmp retornoExiste[0],'1'
+	je falso
+	print errorLogin
+	jmp fin
+	falso:
+	print bienvenido
+    jugar
+	jmp fin
+
+	noEsNumero:   
+	print constrasenaFormato
+	fin:
+
+endm
+
+escribirUsuario macro usuario, contra
+ LOCAL CICLO, escribirUsuario, mientras, mientras2
+ pushear
+ mov di,0
+ mov cx,1000
+ mov si,1
+
+ CICLO:
+	cmp bufferUsuarios[di],	'$'
+	je escribirUser
+	add di,12
+	inc si
+	dec cx
+	jne CICLO
+
+	escribirUser:
+		mov ax, si
+		mov bufferUsuarios[di],al
+		mov cx,7
+		mov si,0
+		inc di
+		mientras:
+			mov al,usuario[si]
+			mov bufferUsuarios[di],al
+			inc si
+			inc di
+			loop mientras
+
+		mov cx,4
+		mov si,0
+		mientras2:
+			mov al,contra[si]
+			mov bufferUsuarios[di],al
+			inc si
+			inc di
+			loop mientras2
+		
+		abrirArchivo rutaArchivo,handleFichero
+		obtenerIndice bufferUsuarios
+ 		escribirArchivo 1000, bufferUsuarios,handleFichero
+ 		closefile handleFichero
+endm
+
+comprobacion macro usuario, contra
+ LOCAL escribirUser, mientras, mientras2,siguiente, fin
+ pushear
+ mov di,0
+ mov bx,1000
+ mov si,1
+ mov retornoExiste[0],'0'
+	
+escribirUser:
+		mov cx,7
+		mov si,0
+		inc di
+			limpiarCadena userAux, 9
+		mientras:
+			mov al,bufferUsuarios[di]
+			mov userAux[si],al
+			inc si
+			inc di
+			loop mientras
+		
+		;print userAux
+		mov cx,4
+		mov si,0
+		limpiarCadena contraAux, 9
+		mientras2:
+			mov al,bufferUsuarios[di]
+			mov contraAux[si],al
+			inc si
+			inc di
+			loop mientras2
+		compararCadenas userAux, usuario, igual1
+		cmp igual1[0],'1'
+		jne siguiente
+
+		compararCadenas contraAux, contra, igual2
+		cmp igual2[0],'1'
+		jne siguiente
+		mov retornoExiste[0],'1'
+
+		siguiente:
+			sub bx, 12
+			cmp bx, 0
+		jg escribirUser
+
+		fin:
+endm
+
+
+compararCadenas macro cadena1,cadena2,bandera
+	LOCAL comp,fin,igual1, igual2
+	push di
+	push bx
+	mov bandera[0],'0'
+	xor di,di
+	sub di,1
+	comp:
+		inc di
+		cmp cadena1[di],'$'
+		je igual1
+		cmp cadena2[di],'$'
+		je igual2
+		mov bl,cadena2[di]
+		cmp cadena1[di],bl
+		je comp
+		jmp fin
+	igual1:
+		cmp cadena2[di],'$'
+		jne fin
+		mov bandera[0],'1'
+		jmp fin
+	igual2:
+		cmp cadena1[di],'$'
+		jne fin
+		mov bandera[0],'1'
+	fin:
+	pop bx
+	pop di
+endm
+
+obtenerIndice macro string
+	LOCAL mientras, fin
+	xor di, di
+	mov di,0
+	mientras:
+		cmp string[di],'$'
+		je fin
+		inc di
+		jmp mientras
+	fin:
+endm
+
+limpiarCadena macro buffer, length
+	LOCAL CICLO
+	pushear
+	xor cx,cx
+	mov cx, length
+	xor di, di
+	mov di,0
+	CICLO:
+		mov buffer[di],'$'
+		inc di
+	LOOP CICLO
+	popear			
+endm
 getTexto2 macro buffer, sz
     push ax
     push dx
@@ -867,6 +1255,70 @@ getTexto2 macro buffer, sz
     pop ax
     print newln
 endm
+
+
+guardarPunteos macro
+	LOCAL CICLO, escribir, salto
+	pushear
+	abrirArchivo rutaPunteos,handlePunteos
+	leerArchivo 1000, bufferPunteos,handlePunteos
+	closefile handlePunteos
+	print bufferPunteos
+ 	mov di,0
+ 	mov bx,1000
+	
+	CICLO:
+	cmp bufferPunteos[di],	'$'
+	je salto
+
+	add di,9
+	jmp CICLO
+	salto:
+	mov si, 2
+	mov cx, 7
+	escribir:
+		mov al, usuario[si]
+		mov bufferPunteos[di],al 
+		inc si
+		inc di
+		loop escribir
+	
+	mov al, punteo[0]
+	mov bufferPunteos[di], al
+	inc di
+
+	mov al, nivel[0]
+	mov bufferPunteos[di],al
+
+	abrirArchivo rutaPunteos,handlePunteos
+	escribirArchivo 1000, bufferPunteos,handlePunteos
+	closefile handlePunteos
+
+	popear
+endm
+
+verificarNumeros macro buffer, length
+	LOCAL salir, omitir, ciclo
+	mov siEsNumero[0],'0'
+	mov cx, length
+	mov si, 0
+	ciclo:
+		cmp buffer[si],48
+		jl salir
+		cmp buffer[si],57
+		jg salir
+		
+		omitir:
+			inc si
+
+		loop ciclo
+	mov siEsNumero[0],'1'
+	salir:
+		
+endm
+
+
+;=================================== ABRIR ARCHIVO ================================
 
 crearArchivo macro buffer,handle
     mov ah,3ch
@@ -892,4 +1344,95 @@ escribir macro numbytes,buffer,handle
 	lea dx,buffer
 	int 21h
 	jc ErrorEscribir
+endm
+
+
+abrirArchivo macro ruta,handle
+    mov ah,3dh
+    mov al,10b
+    lea dx,ruta
+    int 21h
+    mov handle,ax
+    jc ErrorAbrir
+endm
+
+
+leerArchivo macro numbytes, buffer, handle
+    PUSH cx
+    leer numbytes, buffer, handle
+    POP cx
+endm
+leer macro numbytes,buffer,handle
+    mov ah,3fh
+    mov bx,handle
+    mov cx,numbytes
+    lea dx,buffer
+    int 21h
+    jc ErrorLeer
+endm
+
+closefile macro handler
+    LOCAL Inicio
+    xor ax, ax
+    Inicio:
+        mov ah, 3eh
+        mov bx, handler
+        int 21h
+        jc CloseError
+endm
+
+Delay macro tiempo
+  PUSH CX
+  PUSH DX
+  PUSH AX
+  mov cx,0000h 	;tiempo del delay
+  mov dx,tiempo 	;tiempo del delay
+  mov ah,86h
+  int 15h 
+  POP AX
+  POP DX
+  POP CX
+endm
+
+pause macro
+ LOCAL seguir
+	seguir:
+	moverCursor 0, 0
+	getChar
+	printBloque 0,0,10,10,00h
+	cmp al,27
+	jne seguir
+	
+endm
+
+
+Sound macro hz
+    push ax
+    push bx
+    push cx
+    push dx
+    xor cx,cx
+    xor dx,dx
+
+    mov al, 86h
+    out 43h, al
+    mov ax, 1193180 ;numero de hz
+    mov bx,hz
+    div bx
+    out 42h, al
+    mov al, ah
+    out 42h, al 
+    in al, 61h
+    or al, 00000011b
+    out 61h, al
+    delay 0ffffh
+    in al, 61h
+    and al, 11111100b
+    out 61h, al
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+   
 endm
